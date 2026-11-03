@@ -149,7 +149,17 @@ No unit/UI tests are currently included. To add tests, create a test target in X
 
 ## 📸 Screenshots
 
-See the `Screenshots/` directory (currently empty) for UI captures.
+| Security Zones — Landing | Security Zones — All Armed |
+|---|---|
+| ![Security Zones Landing](Screenshots/security_zone_landing.png) | ![Security Zones All Armed](Screenshots/security_zone_all_armed.png) |
+
+| Security Zones — Search | Security Zones — Disarm Warning |
+|---|---|
+| ![Security Zones Search](Screenshots/security_zone_search.png) | ![Security Zones Disarm Warning](Screenshots/security_zone_disarm_warning.png) |
+
+| Event History | Event History — Cleared |
+|---|---|
+| ![Event History](Screenshots/event_history.png) | ![Event History Cleared](Screenshots/event_history_clear.png) |
 
 ---
 
