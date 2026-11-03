@@ -7,7 +7,11 @@ An elegant, lightweight iOS application built with **SwiftUI** and modern **Swif
 ## 🚀 Key Features
 
 * **Zone Dashboard:** Real-time monitoring of designated security zones with battery diagnostics, sensor status, and reactive arm/disarm toggles.
-* **Event History Screen:** Chronological log tracking system events with color-coded severity levels (info / warning / critical) and pull-to-refresh asynchronous simulation.
+* **Search & Filter Zones:** Search zones by name and filter by state (All / Armed / Disarmed).
+* **Master Lockdown Controls:** One-tap "Arm All" and confirmation-gated "Disarm All" across every zone.
+* **Event History Screen:** Chronological log tracking system events with color-coded severity levels (info / warning / critical), severity filtering, and pull-to-refresh asynchronous simulation.
+* **Clear History:** Toolbar action to wipe all event logs (with confirmation).
+* **Haptic Feedback:** Tactile feedback on zone toggles and master actions via `UIImpactFeedbackGenerator`.
 * **Modular Tab Layout:** Clean navigation split cleanly between zones and historical alerts.
 * **Local Persistence:** Zones and events are persisted across app launches using `UserDefaults` (JSON-encoded `Codable` models).
 * **Reactive State:** Single source of truth via an `@Observable` `SecurityManager` injected through the SwiftUI environment.
@@ -18,7 +22,8 @@ An elegant, lightweight iOS application built with **SwiftUI** and modern **Swif
 
 * **MVVM Design Pattern:** Clean separation between pure data models (`SecurityZoneModel`, `SecurityEventModel`), state handlers (`SecurityManager`), and declarative SwiftUI views.
 * **Swift Concurrency:** Utilizes structured concurrency (`async/await`, `Task.sleep`) for asynchronous data refresh simulations.
-* **Declarative UI:** Built entirely using modern SwiftUI (`NavigationStack`, `TabView`, `@State` bindings, `.refreshable`).
+* **Declarative UI:** Built entirely using modern SwiftUI (`NavigationStack`, `TabView`, `@State` bindings, `.refreshable`, `.searchable`, `.alert`, toolbars).
+* **Haptics:** Uses `UIKit`'s `UIImpactFeedbackGenerator` for tactile feedback on interactions.
 * **Observation Framework:** Uses the `@Observable` macro (iOS 17+) for fine-grained, automatic view updates without manual `ObservableObject`/`@Published` boilerplate.
 * **Persistence Layer:** `didSet` observers on published collections encode to `UserDefaults` on every mutation; `init` hydrates from storage or falls back to mock data.
 
@@ -71,14 +76,19 @@ HomeSecurityPanel/
 ## 🔄 State & Event Flow
 
 1. `MainTabView` creates a single `@State SecurityManager` and injects it via `.environment(...)`.
-2. `ZoneListView` reads `securityManager.zones` and renders each zone row.
+2. `ZoneListView` reads `securityManager.zones`, applies search + filter, and renders each zone row.
+   - "Arm All" calls `securityManager.setAllZones(armed: true)` directly.
+   - "Disarm All" presents a confirmation alert, then calls `securityManager.setAllZones(armed: false)`.
 3. Toggling a zone calls `securityManager.toggleZone(_:)`, which:
    - Flips `isArmed` for the matching zone.
+   - Fires haptic feedback (medium if arming, light if disarming).
    - Stamps the current time.
    - Prepends a new `SecurityEventModel` (severity `.info` if armed, `.warning` if disarmed).
    - Triggers `didSet` persistence for both collections.
-4. `EventHistoryView` renders `securityManager.events` (newest first) with color-coded severity dots.
-5. Pull-to-refresh invokes `fetchNewEvents()`, which simulates an async fetch via `Task.sleep`.
+4. `setAllZones(armed:)` updates every zone, fires a heavy haptic, and logs a master event (severity `.critical` if arming all, `.warning` if disarming all).
+5. `EventHistoryView` renders filtered `securityManager.events` (newest first) with color-coded severity dots; severity chips filter by level.
+6. Toolbar trash button calls `securityManager.clearHistory()`, which wipes logs and re-inserts a single "Event History Cleared" info event (with confirmation alert).
+7. Pull-to-refresh invokes `fetchNewEvents()`, which simulates an async fetch via `Task.sleep`.
 
 ---
 
@@ -87,7 +97,7 @@ HomeSecurityPanel/
 * **Xcode:** 26.0 or later (project uses deployment target 26.2)
 * **iOS:** 26.2+ (iPhone & iPad — `TARGETED_DEVICE_FAMILY = "1,2"`)
 * **Swift:** 5.0
-* **No third-party dependencies** — uses only first-party frameworks (SwiftUI, Foundation, Observation).
+* **No third-party dependencies** — uses only first-party frameworks (SwiftUI, Foundation, Observation, UIKit).
 
 ---
 
@@ -118,18 +128,22 @@ xcodebuild -project HomeSecurityPanel.xcodeproj \
 ## 🧪 Testing
 
 No unit/UI tests are currently included. To add tests, create a test target in Xcode and cover:
-* `SecurityManager.toggleZone(_:)` state + event creation.
+* `SecurityManager.toggleZone(_:)` state + event creation + haptic path.
+* `SecurityManager.setAllZones(armed:)` bulk update + master event.
+* `SecurityManager.clearHistory()` wipe + reset event.
 * `didSet` persistence round-trip via `UserDefaults`.
 * `SecurityEventModel.EventSeverity.color` mapping.
+* Zone filtering logic (`ZoneFilter` / `filteredZones`) and severity filtering (`filteredEvents`).
 
 ---
 
 ## 📝 Known Limitations
 
 * `fetchNewEvents()` only simulates latency (`Task.sleep`) and does not generate new events.
-* Duplicate `import SwiftUI` statements exist in `ZoneListView.swift` and `EventHistoryView.swift`.
-* `SecurityEventModel` and `SecurityManager` import `SwiftUI` unnecessarily (could be reduced to `Foundation` / `Observation`).
+* Duplicate `import SwiftUI` statements were removed; `SecurityManager` now imports `UIKit` for haptics.
+* `SecurityEventModel` and `SecurityManager` could reduce SwiftUI dependency further (only `Color`/`@Observable` needed).
 * No remote backend or push notifications — all data is local/mock.
+* Default mock dataset now contains 8 security zones.
 
 ---
 
