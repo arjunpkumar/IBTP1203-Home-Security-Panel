@@ -24,6 +24,36 @@ struct ZoneListView: View {
     var body: some View {
         NavigationStack {
             List {
+                // Quick Status Summary Card Section
+                Section {
+                    HStack(spacing: 16) {
+                        // Status Icon Badge
+                        ZStack {
+                            Circle()
+                                .fill(securityManager.zones.allSatisfy { $0.isArmed } ? Color.blue.opacity(0.15) : Color.orange.opacity(0.15))
+                                .frame(width: 50, height: 50)
+                            
+                            Image(systemName: securityManager.zones.allSatisfy { $0.isArmed } ? "shield.fill" : "exclamationmark.shield.fill")
+                                .font(.title2)
+                                .foregroundColor(securityManager.zones.allSatisfy { $0.isArmed } ? .blue : .orange)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(securityManager.zones.allSatisfy { $0.isArmed } ? "System Fully Armed" : "Attention Required")
+                                .font(.headline)
+                            
+                            let armedCount = securityManager.zones.filter { $0.isArmed }.count
+                            let totalCount = securityManager.zones.count
+                            Text("\(armedCount) of \(totalCount) zones currently active")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(.vertical, 4)
+                    .listRowSeparator(.hidden)
+                }
                 // Header Controls Section (Lives inside the list to keep Large Title stable)
                 Section {
                     HStack(spacing: 12) {
